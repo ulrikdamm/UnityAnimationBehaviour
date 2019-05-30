@@ -34,7 +34,7 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 		var propertyNames = new string[propertyCount];
 		var selectedPropertyName = serializedObject.FindProperty("keyword").stringValue;
 		
-		var selectedIndex = 0;
+		var selectedIndex = -1;
 		for (var i = 0; i < propertyCount; i++) {
 			propertyNames[i] = ShaderUtil.GetPropertyName(shader, i);
 			if (propertyNames[i] == selectedPropertyName) { selectedIndex = i; }
@@ -42,7 +42,7 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 		
 		EditorGUILayout.BeginHorizontal();
 		EditorGUILayout.PrefixLabel("Material keyword");
-		var newSelectionIndex = EditorGUILayout.Popup(selectedIndex, propertyNames);
+		var newSelectionIndex = EditorGUILayout.Popup(selectedIndex == -1 ? 0 : selectedIndex, propertyNames);
 		EditorGUILayout.EndHorizontal();
 		
 		if (newSelectionIndex != selectedIndex) {
@@ -155,7 +155,7 @@ public class ShaderKeywordAnimation : AnimationBehaviour {
 	[SerializeField] Vector4 vectorToValue = Vector4.one;
 	
 	Material _material;
-	Material material {
+	public Material material {
 		get {
 			if (_material == null) {
 				var materials = meshRenderer.sharedMaterials;

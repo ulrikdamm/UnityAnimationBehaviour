@@ -1,11 +1,14 @@
 ﻿using UnityEngine;
 
 public class UIPositionAnimation : AnimationBehaviour {
-	[SerializeField] RectTransform rectTransform;
+	public RectTransform rectTransform;
 	
+	[Space]
+	public bool readInitialPositionOnAnimation = true;
 	public Vector3 toPosition;
 	public Vector3 initialPosition;
 	
+	[Space]
 	public bool animatePivotAndAnchor;
 	public Vector2 targetPivot;
 	public Vector2 targetAnchorMin;
@@ -55,7 +58,7 @@ public class UIPositionAnimation : AnimationBehaviour {
 	}
 	
 	protected override void onAnimationBegin() {
-		initialPosition = rectTransform.anchoredPosition;
+		if (readInitialPositionOnAnimation) { initialPosition = rectTransform.anchoredPosition; }
 		initialPivot = rectTransform.pivot;
 		initialAnchorMin = rectTransform.anchorMin;
 		initialAnchorMax = rectTransform.anchorMax;

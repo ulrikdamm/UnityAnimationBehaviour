@@ -8,17 +8,24 @@ using System.Collections.Generic;
 [CanEditMultipleObjects]
 public class CombinedAnimationEditor : AnimationBehaviourEditor {
 	protected override void drawChildInspectorGUI() {
+		((CombinedAnimation)target).updateComponents();
+		
 		drawPropertiesExcludingDefaultHiddenAnd("animations");
 		
 		var animationCount = serializedObject.FindProperty("animations").arraySize;
 		
-		for (var i = 0; i < animationCount; i++) {
-			drawAnimationInspector(i);
+		if (animationCount == 0) {
+			EditorGUILayout.HelpBox("Add Animation Components to this object and they will show up here", MessageType.Info);
+		} else {
+			for (var i = 0; i < animationCount; i++) {
+				drawAnimationInspector(i);
+			}
 		}
 	}
 	
 	void drawAnimationInspector(int index) {
 		var animation = serializedObject.FindProperty("animations").GetArrayElementAtIndex(index);
+		if (animation.FindPropertyRelative("animation").objectReferenceValue == null) { return; }
 		
 		var name = animation.FindPropertyRelative("animation").objectReferenceValue.GetType().Name;
 		animation.FindPropertyRelative("enabled").boolValue = EditorGUILayout.BeginToggleGroup(name, animation.FindPropertyRelative("enabled").boolValue);
@@ -84,6 +91,37 @@ public class CombinedAnimation : AnimationBehaviour {
 	}
 	
 	#if UNITY_EDITOR
+	public void updateComponents() {
+		var newAnimations = new List<AnimationReference>(animations);
+		var anyChanges = false;
+		
+		for (var i = 0; i < newAnimations.Count; i++) {
+			if (newAnimations[i].animation != null) { continue; }
+			newAnimations.RemoveAt(i);
+			i -= 1;
+			anyChanges = true;
+		}
+		
+		var animComponents = GetComponents<AnimationBehaviour>();
+		for (var component = 0; component < animComponents.Length; component++) {
+			if (animComponents[component] == this) { continue; }
+			var exists = false;
+			
+			for (var animation = 0; animation < newAnimations.Count; animation++) {
+				if (newAnimations[animation].animation == animComponents[component]) { exists = true; break; }
+			}
+			
+			if (!exists) {
+				newAnimations.Add(new AnimationReference { animation = animComponents[component], startTime = 0, endTime = 1 });
+				anyChanges = true;
+			}
+		}
+		
+		if (anyChanges) {
+			animations = newAnimations.ToArray();
+		}
+	}
+	
 	void Reset() {
 		var animComponents = GetComponents<AnimationBehaviour>();
 		

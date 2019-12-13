@@ -211,7 +211,7 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	public enum AnimationStart { no, onStart, onEnable };
 	public AnimationStart startAnimation;
 	
-	public enum CompletionAction { none, disable, destroy, loop };
+	public enum CompletionAction { none, disable, destroy, loop, playReverse };
 	public CompletionAction onCompletion;
 	public CompletionAction onBackCompletion;
 	
@@ -224,6 +224,12 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	protected virtual void onAnimationBegin() {}
 	protected abstract void onAnimationDone();
 	protected abstract void onAnimationProgress(float progress);
+	
+	public delegate void AnimationEvent();
+	public event AnimationEvent animationBeginEvent;
+	public event AnimationEvent animationEndEvent;
+	public delegate void AnimationProgressEvent(float progress);
+	public event AnimationProgressEvent animationProgressEvent;
 	
 	void Reset() {
 		curve = AnimationCurve.EaseInOut(0, 0, 1, 1);
@@ -286,6 +292,7 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		stepAnimation(ref startTime);
 		
 		for (var i = 0; i < callbacks.Count; i++) { callbacks[i].animationBegin(this); }
+		if (animationBeginEvent != null) { animationBeginEvent(); }
 	}
 	
 	public void beginAnimation() {
@@ -296,6 +303,7 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		stepAnimation(ref startTime);
 		
 		for (var i = 0; i < callbacks.Count; i++) { callbacks[i].animationBegin(this); }
+		if (animationBeginEvent != null) { animationBeginEvent(); }
 	}
 	
 	public IEnumerator animationRoutine() {
@@ -336,15 +344,15 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		
 		var completion = (playBack ? onBackCompletion  : onCompletion);
 		
-		for (var i = 0; i < callbacks.Count; i++) {
-			callbacks[i].animationDone(this);
-		}
+		for (var i = 0; i < callbacks.Count; i++) { callbacks[i].animationDone(this); }
+		if (animationEndEvent != null) { animationEndEvent(); }
 		
 		switch (completion) {
 			case CompletionAction.none: break;
 			case CompletionAction.disable: gameObject.SetActive(false); break;
 			case CompletionAction.destroy: Destroy(gameObject); break;
 			case CompletionAction.loop: beginAnimation(); break;
+			case CompletionAction.playReverse: if (isPlayBack) { beginAnimation(); } else { beginAnimationBack(); } break;
 		}
 	}
 	
@@ -359,9 +367,8 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		
 		onAnimationProgress(progress);
 		
-		for (var i = 0; i < callbacks.Count; i++) {
-			callbacks[i].animationProgress(this, progress);
-		}
+		for (var i = 0; i < callbacks.Count; i++) { callbacks[i].animationProgress(this, progress); }
+		if (animationProgressEvent != null) { animationProgressEvent(progress); }
 	}
 	
 	public void setIgnoreTimeScale(bool ignore) {
@@ -372,21 +379,5 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		if (clamped && progress < start) { return 0; }
 		if (clamped && progress > end) { return 1; }
 		return (progress - start) / (end - start);
-	}
-	
-	[ContextMenu("Print curve")]
-	void printCurve() {
-		for (var i = 0; i < curve.keys.Length; i++) {
-			var key = curve.keys[i];
-			Debug.Log("time: " + key.time + ", value: " + key.value + ", inTangent: " + key.inTangent + ", outTangent: " + key.outTangent + ", inWeight: " + key.inWeight + ", outWeight: " + key.outWeight);
-		}
-	}
-	
-	[ContextMenu("Print back curve")]
-	void printBackCurve() {
-		for (var i = 0; i < backCurve.keys.Length; i++) {
-			var key = curve.keys[i];
-			Debug.Log("time: " + key.time + ", value: " + key.value + ", inTangent: " + key.inTangent + ", outTangent: " + key.outTangent + ", inWeight: " + key.inWeight + ", outWeight: " + key.outWeight);
-		}
 	}
 }

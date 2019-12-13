@@ -35,11 +35,16 @@ public class PositionAnimation : AnimationBehaviour {
 	
 	protected override void onAnimationDone() {
 		if (toTransform != null) {
-			transform.position = (playBack ? fromTransform : toTransform).position;
-			return;
+			var targetTransform = (playBack ? fromTransform : toTransform);
+			
+			if (targetTransform is RectTransform) {
+				transform.position = targetTransform.TransformPoint(((RectTransform)targetTransform).rect.center);
+			} else {
+				transform.position = targetTransform.position;
+			}
+		} else {
+			setCurrentPosition(playBack ? fromPosition : toPosition);
 		}
-		
-		setCurrentPosition(playBack ? fromPosition : toPosition);
 	}
 	
 	protected override void onAnimationProgress(float progress) {

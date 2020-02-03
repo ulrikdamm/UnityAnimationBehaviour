@@ -3,8 +3,8 @@
 public class UIRotateAnimation : AnimationBehaviour {
 	[System.Serializable] public enum Axis { x, y, z };
 	
-	[Header("Input")]
 	public Axis axis = Axis.z;
+	public Space space = Space.World;
 	public float fromAngle = 0;
 	public float toAngle = 180;
 	
@@ -27,11 +27,20 @@ public class UIRotateAnimation : AnimationBehaviour {
 	}
 	
 	protected override void onAnimationDone() {
-		transform.rotation = toQuart;
+		var target = (playBack ? fromQuart : toQuart);
+		
+		switch (space) {
+			case Space.World: transform.rotation = target; break;
+			case Space.Self: transform.localRotation = target; break;
+		}
 	}
 	
 	protected override void onAnimationProgress(float progress) {
-		transform.rotation = Quaternion.AngleAxis(Mathf.LerpUnclamped(fromAngle, toAngle, progress), angleAxis);
-		// transform.rotation = Quaternion.SlerpUnclamped(fromQuart, toQuart, progress);
+		var target = Quaternion.AngleAxis(Mathf.LerpUnclamped(fromAngle, toAngle, progress), angleAxis);
+		
+		switch (space) {
+			case Space.World: transform.rotation = target; break;
+			case Space.Self: transform.localRotation = target; break;
+		}
 	}
 }

@@ -219,7 +219,7 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	
 	public bool isPlayBack => playBack;
 	public bool isPlaying => startTime.HasValue;
-	protected float? startTime;
+	public float? startTime;
 	
 	protected virtual void onAnimationBegin() {}
 	protected abstract void onAnimationDone();

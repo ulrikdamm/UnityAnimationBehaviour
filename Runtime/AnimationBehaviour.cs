@@ -216,10 +216,10 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	public CompletionAction onBackCompletion;
 	
 	protected bool playBack;
-	
 	public bool isPlayBack => playBack;
 	public bool isPlaying => startTime.HasValue;
 	public float? startTime;
+	[System.NonSerialized] public bool paused = false;
 	
 	protected virtual void onAnimationBegin() {}
 	protected abstract void onAnimationDone();
@@ -312,7 +312,9 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		
 		while (startTime != null) {
 			yield return new WaitForEndOfFrame();
-			stepAnimation(ref startTime);
+			
+			if (paused) { startTime += deltaTime(); }
+			else { stepAnimation(ref startTime); }
 		}
 	}
 	
@@ -324,6 +326,11 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 		if (!Application.isPlaying) { return Time.realtimeSinceStartup; }
 		if (ignoreTimeScale) { return Time.unscaledTime; }
 		return Time.time;
+	}
+	
+	float deltaTime() {
+		if (ignoreTimeScale) { return Time.unscaledDeltaTime; }
+		return Time.deltaTime;
 	}
 	
 	void stepAnimation(ref float? startTime) {

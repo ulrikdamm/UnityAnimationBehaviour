@@ -36,6 +36,10 @@ public class UIRotateAnimation : AnimationBehaviour {
 	}
 	
 	protected override void onAnimationProgress(float progress) {
+		#if UNITY_EDITOR
+		onAnimationBegin();
+		#endif
+		
 		var target = Quaternion.AngleAxis(Mathf.LerpUnclamped(fromAngle, toAngle, progress), angleAxis);
 		
 		switch (space) {

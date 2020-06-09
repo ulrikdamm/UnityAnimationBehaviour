@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -18,12 +19,21 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 		EditorGUILayout.LabelField("Keyword", new GUIStyle(EditorStyles.boldLabel));
 		
 		var meshRenderer = (MeshRenderer)serializedObject.FindProperty("meshRenderer").objectReferenceValue;
-		if (meshRenderer == null) { return; }
+		var image = (Image)serializedObject.FindProperty("image").objectReferenceValue;
 		
-		var materialIndex = serializedObject.FindProperty("materialIndex").intValue;
-		if (materialIndex < 0 || materialIndex >= meshRenderer.sharedMaterials.Length) { return; }
+		Shader shader;
 		
-		var shader = meshRenderer.sharedMaterials[materialIndex].shader;
+		if (meshRenderer != null) {
+			var materialIndex = serializedObject.FindProperty("materialIndex").intValue;
+			if (materialIndex < 0 || materialIndex >= meshRenderer.sharedMaterials.Length) { return; }
+			
+			shader = meshRenderer.sharedMaterials[materialIndex].shader;
+		} else if (image != null) {
+			shader = image.material.shader;
+		} else {
+			return;
+		}
+		
 		var propertyCount = ShaderUtil.GetPropertyCount(shader);
 
 		if (propertyCount == 0) {
@@ -107,28 +117,52 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 	
 	void drawMaterialSection() {
 		var meshRendererProp = serializedObject.FindProperty("meshRenderer");
+		var imageProp = serializedObject.FindProperty("image");
 		var materialIndexProp = serializedObject.FindProperty("materialIndex");
 		
+		GUI.enabled = (imageProp.objectReferenceValue == null);
 		EditorGUILayout.PropertyField(meshRendererProp);
 		
-		var meshRenderer = (MeshRenderer)meshRendererProp.objectReferenceValue;
-		if (meshRenderer != null) {
-			var selectedIndex = materialIndexProp.intValue;
-			
-			var materials = new string[meshRenderer.sharedMaterials.Length];
-			for (var i = 0; i < meshRenderer.sharedMaterials.Length; i++) {
-				materials[i] = meshRenderer.sharedMaterials[i].name;
-			}
-			
-			EditorGUILayout.BeginHorizontal();
-			EditorGUILayout.PrefixLabel("Material");
-			selectedIndex = EditorGUILayout.Popup(selectedIndex, materials);
-			EditorGUILayout.EndHorizontal();
-			
-			materialIndexProp.intValue = selectedIndex;
-		}
+		GUI.enabled = (meshRendererProp.objectReferenceValue == null);
+		EditorGUILayout.PropertyField(imageProp);
+		
+		drawMeshMaterials();
+		drawImageMaterials();
 		
 		EditorGUILayout.PropertyField(serializedObject.FindProperty("instantiateMaterial"));
+	}
+	
+	void drawMeshMaterials() {
+		var materialIndexProp = serializedObject.FindProperty("materialIndex");
+		var meshRendererProp = serializedObject.FindProperty("meshRenderer");
+		
+		var meshRenderer = (MeshRenderer)meshRendererProp.objectReferenceValue;
+		if (meshRenderer == null) { return; }
+		
+		var selectedIndex = materialIndexProp.intValue;
+		
+		var materials = new string[meshRenderer.sharedMaterials.Length];
+		for (var i = 0; i < meshRenderer.sharedMaterials.Length; i++) {
+			materials[i] = meshRenderer.sharedMaterials[i].name;
+		}
+		
+		EditorGUILayout.BeginHorizontal();
+		EditorGUILayout.PrefixLabel("Material");
+		selectedIndex = EditorGUILayout.Popup(selectedIndex, materials);
+		EditorGUILayout.EndHorizontal();
+		
+		materialIndexProp.intValue = selectedIndex;
+	}
+	
+	void drawImageMaterials() {
+		var imageProp = serializedObject.FindProperty("image");
+		var image = (Image)imageProp.objectReferenceValue;
+		if (image == null) { return; }
+		
+		EditorGUILayout.BeginHorizontal();
+		EditorGUILayout.PrefixLabel("Material");
+		EditorGUILayout.Popup(0, new string[] { image.material.name });
+		EditorGUILayout.EndHorizontal();
 	}
 }
 #endif
@@ -136,6 +170,7 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 public class ShaderKeywordAnimation : AnimationBehaviour {
 	[Header("Renderer")]
 	[SerializeField] MeshRenderer meshRenderer;
+	[SerializeField] Image image;
 	[SerializeField] int materialIndex;
 	[SerializeField] bool instantiateMaterial = true;
 	
@@ -158,14 +193,21 @@ public class ShaderKeywordAnimation : AnimationBehaviour {
 	public Material material {
 		get {
 			if (_material == null) {
-				var materials = meshRenderer.sharedMaterials;
-				
-				if (instantiateMaterial) {
-					_material = Object.Instantiate(materials[materialIndex]);
-					materials[materialIndex] = _material;
-					meshRenderer.sharedMaterials = materials;
+				if (meshRenderer != null) {
+					var materials = meshRenderer.sharedMaterials;
+					
+					if (instantiateMaterial) {
+						_material = Object.Instantiate(materials[materialIndex]);
+						materials[materialIndex] = _material;
+						meshRenderer.sharedMaterials = materials;
+					} else {
+						_material = materials[materialIndex];
+					}
+				} else if (image != null) {
+					_material = (instantiateMaterial ? Object.Instantiate(image.material) : image.material);
+					image.material = _material;
 				} else {
-					_material = materials[materialIndex];
+					throw new System.Exception("No MeshRenderer or Image assigned");
 				}
 			}
 			

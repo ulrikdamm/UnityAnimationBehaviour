@@ -37,11 +37,11 @@ public class PositionAnimation : AnimationBehaviour {
 		if (toTransform != null) {
 			var targetTransform = (playBack ? fromTransform : toTransform);
 			
-			if (targetTransform is RectTransform) {
-				transform.position = targetTransform.TransformPoint(((RectTransform)targetTransform).rect.center);
-			} else {
+			// if (targetTransform is RectTransform) {
+			// 	transform.position = targetTransform.TransformPoint(((RectTransform)targetTransform).rect.center);
+			// } else {
 				transform.position = targetTransform.position;
-			}
+			// }
 		} else {
 			setCurrentPosition(playBack ? fromPosition : toPosition);
 		}

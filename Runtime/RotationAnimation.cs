@@ -24,6 +24,10 @@ public class RotationAnimation : AnimationBehaviour {
 	}
 	
 	protected override void onAnimationProgress(float progress) {
+		#if UNITY_EDITOR
+		onAnimationBegin();
+		#endif
+		
         var newRotation = Quaternion.LerpUnclamped(fromQuart, toQuart, progress);
 		
         switch (space) {

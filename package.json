@@ -1,7 +1,7 @@
 {
 	"name": "co.northplay.animationbehaviour",
 	"displayName": "AnimationBehaviour",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"unity": "2019.3",
 	"description": "Includes the AnimationBehaviour base class for making animations, including common subclasses for animating position, rotation, scale, shader keywords, etc.",
 	"keywords": ["animation"],

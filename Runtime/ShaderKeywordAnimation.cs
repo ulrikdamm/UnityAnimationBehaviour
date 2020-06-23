@@ -126,6 +126,8 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 		GUI.enabled = (meshRendererProp.objectReferenceValue == null);
 		EditorGUILayout.PropertyField(imageProp);
 		
+		GUI.enabled = true;
+		
 		drawMeshMaterials();
 		drawImageMaterials();
 		

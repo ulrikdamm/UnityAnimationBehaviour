@@ -65,7 +65,7 @@ public class UIPositionAnimation : AnimationBehaviour {
 	}
 	
 	protected override void onAnimationDone() {
-		rectTransform.anchoredPosition = toPosition;
+		rectTransform.anchoredPosition = (playBack ? initialPosition : toPosition);
 		
 		if (animatePivotAndAnchor) {
 			rectTransform.pivot = targetPivot;

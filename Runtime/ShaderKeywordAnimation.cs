@@ -171,25 +171,25 @@ public class ShaderKeywordAnimationEditor : AnimationBehaviourEditor {
 
 public class ShaderKeywordAnimation : AnimationBehaviour {
 	[Header("Renderer")]
-	[SerializeField] MeshRenderer meshRenderer;
-	[SerializeField] Image image;
-	[SerializeField] int materialIndex;
-	[SerializeField] bool instantiateMaterial = true;
+	public MeshRenderer meshRenderer;
+	public Image image;
+	public int materialIndex;
+	public bool instantiateMaterial = true;
 	
 	[Header("Keyword")]
-	[SerializeField] string keyword = "_Progress";
+	public string keyword = "_Progress";
 	
-	[SerializeField] bool animateFloat = false;
-	[SerializeField] float floatFromValue = 0;
-	[SerializeField] float floatToValue = 1;
+	public bool animateFloat = false;
+	public float floatFromValue = 0;
+	public float floatToValue = 1;
 	
-	[SerializeField] bool animateColor = false;
-	[SerializeField] Color colorFromValue = Color.white;
-	[SerializeField] Color colorToValue = Color.black;
+	public bool animateColor = false;
+	public Color colorFromValue = Color.white;
+	public Color colorToValue = Color.black;
 	
-	[SerializeField] bool animateVector = false;
-	[SerializeField] Vector4 vectorFromValue = Vector4.zero;
-	[SerializeField] Vector4 vectorToValue = Vector4.one;
+	public bool animateVector = false;
+	public Vector4 vectorFromValue = Vector4.zero;
+	public Vector4 vectorToValue = Vector4.one;
 	
 	Material _material;
 	public Material material {

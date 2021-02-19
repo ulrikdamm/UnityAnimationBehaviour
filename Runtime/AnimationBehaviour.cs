@@ -285,6 +285,14 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	}
 	
 	public void beginAnimationBack() {
+		#if UNITY_EDITOR && EditorCoroutine
+		if (!Application.isPlaying) {
+			resetAnimation(playBack: true);
+			EditorCoroutineUtility.StartCoroutine(animationRoutine(), this);
+			return;
+		}
+		#endif
+		
 		startTime = currentTime();
 		playBack = true;
 		enabled = true;
@@ -296,6 +304,14 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	}
 	
 	public void beginAnimation() {
+		#if UNITY_EDITOR && EditorCoroutine
+		if (!Application.isPlaying) {
+			resetAnimation();
+			EditorCoroutineUtility.StartCoroutine(animationRoutine(), this);
+			return;
+		}
+		#endif
+		
 		startTime = currentTime();
 		playBack = false;
 		enabled = true;
@@ -319,7 +335,8 @@ public abstract class AnimationBehaviour : MonoBehaviour, IgnoreTimeScale {
 	}
 	
 	public virtual void Update() {
-		stepAnimation(ref startTime);
+		if (paused) { startTime += deltaTime(); }
+		 else { stepAnimation(ref startTime); }
 	}
 	
 	float currentTime() {

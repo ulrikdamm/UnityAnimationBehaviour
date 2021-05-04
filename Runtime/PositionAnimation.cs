@@ -1,66 +1,92 @@
 ﻿using UnityEngine;
 
+#if UNITY_EDITOR
+using UnityEditor;
+
+[CustomEditor(typeof(PositionAnimation))]
+public class PositionAnimationEditor : AnimationBehaviourEditor {
+	PositionAnimation obj => (PositionAnimation)target;
+	
+	protected override void drawChildInspectorGUI() {
+		drawPropertiesExcludingDefaultHidden();
+		
+		GUILayout.Space(10);
+		EditorGUILayout.BeginHorizontal();
+		EditorGUILayout.PrefixLabel("Set");
+		
+		GUI.enabled = (Vector3.Distance(obj.currentPosition, obj.fromPosition) > 0.001f);
+		if (GUILayout.Button("From")) { obj.setFrom(); }
+		
+		GUI.enabled = (Vector3.Distance(obj.currentPosition, obj.toPosition) > 0.001f);
+		if (GUILayout.Button("To")) { obj.setTo(); }
+		
+		EditorGUILayout.EndHorizontal();
+		EditorGUILayout.BeginHorizontal();
+		EditorGUILayout.PrefixLabel("Restore");
+		
+		GUI.enabled = (Vector3.Distance(obj.currentPosition, obj.fromPosition) > 0.001f);
+		if (GUILayout.Button("From")) { obj.restoreFrom(); }
+		
+		GUI.enabled = (Vector3.Distance(obj.currentPosition, obj.toPosition) > 0.001f);
+		if (GUILayout.Button("To")) { obj.restoreTo(); }
+		
+		EditorGUILayout.EndHorizontal();
+	}
+}
+#endif
+
 public class PositionAnimation : AnimationBehaviour {
-	[Header("Between coordinates")]
 	public Space space;
 	public Vector3 fromPosition;
 	public Vector3 toPosition;
 	
-	[Header("Between transforms")]
-	public Transform fromTransform;
-	public Transform toTransform;
-	public Transform throughTransform;
+	Vector3 from, to;
 	
-	[ContextMenu("Set from position")] void setFromPosition() => fromPosition = currentPosition();
-	[ContextMenu("Set to position")] void setToPosition() => toPosition = currentPosition();
+	Transform _transform;
+	Transform cachedTransform => _transform != null ? _transform : _transform = transform;
 	
-	[ContextMenu("Restore from position")] void restoreFromPosition() => setCurrentPosition(fromPosition);
-	[ContextMenu("Restore to position")] void restoreToPosition() => setCurrentPosition(toPosition);
-	
-	Vector3 currentPosition() {
-		switch (space) {
-			case Space.Self: return transform.localPosition;
-			case Space.World: return transform.position;
-			default: throw new System.Exception("Unknown space");
+	public Vector3 currentPosition {
+		get => space switch { Space.Self => cachedTransform.localPosition, Space.World => cachedTransform.position, _ => throw new System.Exception() };
+		set {
+			switch (space) {
+				case Space.Self: cachedTransform.localPosition = value; break;
+				case Space.World: cachedTransform.position = value; break;
+			}
 		}
 	}
 	
-	void setCurrentPosition(Vector3 position) {
-		switch (space) {
-			case Space.Self: transform.localPosition = position; break;
-			case Space.World: transform.position = position; break;
-			default: throw new System.Exception("Unknown space");
-		}
+	protected override void prepareAnimation() {
+		from = (!playBack && beginFromCurrent ? currentPosition : fromPosition);
+		to = (playBack && beginFromCurrent ? currentPosition : toPosition);
 	}
 	
-	protected override void onAnimationDone() {
-		if (toTransform != null) {
-			var targetTransform = (playBack ? fromTransform : toTransform);
-			
-			// if (targetTransform is RectTransform) {
-			// 	transform.position = targetTransform.TransformPoint(((RectTransform)targetTransform).rect.center);
-			// } else {
-				transform.position = targetTransform.position;
-			// }
-		} else {
-			setCurrentPosition(playBack ? fromPosition : toPosition);
-		}
+	protected override void updateAnimation(float progress, AnimationBehaviour.State state) {
+		currentPosition = Vector3.LerpUnclamped(from, to, progress);
 	}
 	
-	protected override void onAnimationProgress(float progress) {
-		if (throughTransform != null) {
-			var ab = Vector3.LerpUnclamped(fromTransform.position, throughTransform.position, progress);
-			var bc = Vector3.LerpUnclamped(throughTransform.position, toTransform.position, progress);
-			transform.position = Vector3.LerpUnclamped(ab, bc, progress);
-			return;
-		}
-		
-		if (toTransform != null) {
-			transform.position = Vector3.LerpUnclamped(fromTransform.position, toTransform.position, progress);
-			return;
-		}
-		
-		var position = Vector3.LerpUnclamped(fromPosition, toPosition, progress);
-		setCurrentPosition(position);
+	#if UNITY_EDITOR
+	[ContextMenu("Set current position as from")]
+	public void setFrom() {
+		Undo.RecordObject(this, "Set current position as from");
+		fromPosition = currentPosition;
 	}
+	
+	[ContextMenu("Set current position as to")]
+	public void setTo() {
+		Undo.RecordObject(this, "Set current position as to");
+		toPosition = currentPosition;
+	}
+	
+	[ContextMenu("Restore from-position")]
+	public void restoreFrom() {
+		Undo.RecordObject(this, "Restore from-position");
+		currentPosition = fromPosition;
+	}
+	
+	[ContextMenu("Restore to-position")]
+	public void restoreTo() {
+		Undo.RecordObject(this, "Restore to-position");
+		currentPosition = toPosition;
+	}
+	#endif
 }

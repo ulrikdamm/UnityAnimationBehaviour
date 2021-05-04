@@ -5,76 +5,72 @@ using System.Collections;
 using UnityEditor;
 
 [CustomEditor(typeof(UIAlphaAnimation))]
-[CanEditMultipleObjects]
 public class UIAlphaAnimationEditor : AnimationBehaviourEditor {
+	UIAlphaAnimation obj => (UIAlphaAnimation)target;
+	SerializedProperty fromAlpha => serializedObject.FindProperty("fromAlpha");
+	SerializedProperty toAlpha => serializedObject.FindProperty("toAlpha");
+	
 	protected override void drawChildInspectorGUI() {
-		var canvasGroup = serializedObject.FindProperty("canvasGroup");
-		EditorGUILayout.PropertyField(canvasGroup);
-		if (canvasGroup.objectReferenceValue == null && GUILayout.Button("Add Canvas Group")) {
-			var newCanvasGroup = ((UIAlphaAnimation)target).gameObject.AddComponent<CanvasGroup>();
-			canvasGroup.objectReferenceValue = newCanvasGroup;
-			Undo.RegisterCreatedObjectUndo(newCanvasGroup, "Added canvas group");
-		}
+		drawPropertiesExcludingDefaultHiddenAnd(fromAlpha, toAlpha);
 		
-		drawPropertiesExcludingDefaultHiddenAnd("canvasGroup");
+		EditorGUILayout.BeginHorizontal();
+		EditorGUILayout.PropertyField(fromAlpha);
+		GUI.enabled = !Mathf.Approximately(fromAlpha.floatValue, obj.currentAlpha);
+		if (GUILayout.Button("Set", GUILayout.Width(50))) { fromAlpha.floatValue = obj.currentAlpha; }
+		if (GUILayout.Button("Restore", GUILayout.Width(70))) { obj.currentAlpha = fromAlpha.floatValue; }
+		GUI.enabled = true;
+		EditorGUILayout.EndHorizontal();
+		
+		EditorGUILayout.BeginHorizontal();
+		EditorGUILayout.PropertyField(toAlpha);
+		GUI.enabled = !Mathf.Approximately(toAlpha.floatValue, obj.currentAlpha);
+		if (GUILayout.Button("Set", GUILayout.Width(50))) { toAlpha.floatValue = obj.currentAlpha; }
+		if (GUILayout.Button("Restore", GUILayout.Width(70))) { obj.currentAlpha = toAlpha.floatValue; }
+		GUI.enabled = true;
+		EditorGUILayout.EndHorizontal();
 	}
 }
 #endif
 
+[RequireComponent(typeof(CanvasGroup))]
 public class UIAlphaAnimation : AnimationBehaviour {
-	[SerializeField] CanvasGroup canvasGroup;
+	public float fromAlpha = 0;
+	public float toAlpha = 1;
 	
-	public float currentValue => canvasGroup.alpha;
+	float from, to;
 	
-	public float fromValue;
-	public float toValue;
+	CanvasGroup _canvasGroup;
+	CanvasGroup canvasGroup => _canvasGroup != null ? _canvasGroup : _canvasGroup = GetComponent<CanvasGroup>();
 	
-	public void setVisible(bool visible, bool animated = true) {
-		if (visible && animated) {
-			gameObject.SetActive(true);
-			beginAnimation();
-		} else if (visible && !animated) {
-			gameObject.SetActive(true);
-			setImmediately(1);
-		} else if (!visible && animated) {
-			beginAnimationBack();
-		} else {
-			setImmediately(0);
-			gameObject.SetActive(false);
+	public float currentAlpha {
+		get => canvasGroup.alpha;
+		set {
+			canvasGroup.alpha = value;
+			canvasGroup.interactable = (canvasGroup.alpha > 0.001f);
+			canvasGroup.blocksRaycasts = canvasGroup.interactable;
 		}
 	}
 	
-	public void setImmediately(float value) {
-		canvasGroup.alpha = value;
-		canvasGroup.interactable = (canvasGroup.alpha > 0.001f);
-		canvasGroup.blocksRaycasts = canvasGroup.interactable;
-	}
-	
-	public void perform(float fromValue, float toValue) {
-		this.fromValue = fromValue;
-		this.toValue = toValue;
+	public void beginAnimation(float fromValue, float toValue) {
+		beginFromCurrent = false;
+		this.fromAlpha = fromValue;
+		this.toAlpha = toValue;
 		beginAnimation();
 	}
 	
-	public void performBack() {
-		beginAnimationBack();
-	}
-	
-	public IEnumerator performRoutine(float fromValue, float toValue) {
-		this.fromValue = fromValue;
-		this.toValue = toValue;
+	public IEnumerator animationRoutine(float fromValue, float toValue) {
+		beginFromCurrent = false;
+		this.fromAlpha = fromValue;
+		this.toAlpha = toValue;
 		yield return animationRoutine();
 	}
 	
-	void OnValidate() {
-		if (canvasGroup == null) { canvasGroup = GetComponent<CanvasGroup>(); }
+	protected override void prepareAnimation() {
+		from = (!playBack && beginFromCurrent ? currentAlpha : fromAlpha);
+		to = (playBack && beginFromCurrent ? currentAlpha : toAlpha);
 	}
 	
-	protected override void onAnimationDone() {
-		setImmediately(playBack ? fromValue : toValue);
-	}
-	
-	protected override void onAnimationProgress(float progress) {
-		setImmediately(Mathf.Lerp(fromValue, toValue, progress));
+	protected override void updateAnimation(float progress, AnimationBehaviour.State state) {
+		currentAlpha = Mathf.Lerp(fromAlpha, toAlpha, progress);
 	}
 }

@@ -1,38 +1,31 @@
 ﻿using UnityEngine;
 
 public class RotationAnimation : AnimationBehaviour {
+    public Space space;
     public Vector3 fromRotation;
     public Vector3 toRotation;
     
-    public Space space;
+    Quaternion from, to;
+	
+	Transform _transform;
+	Transform cachedTransform => _transform != null ? _transform : _transform = transform;
     
-    Quaternion fromQuart;
-    Quaternion toQuart;
-    
-    protected override void onAnimationBegin() {
-		fromQuart = Quaternion.Euler(fromRotation);
-		toQuart = Quaternion.Euler(toRotation);
+	Quaternion currentRotation {
+		get => space switch { Space.Self => cachedTransform.localRotation, Space.World => cachedTransform.rotation, _ => throw new System.Exception() };
+		set {
+			switch (space) {
+				case Space.Self: cachedTransform.localRotation = value; break;
+				case Space.World: cachedTransform.rotation = value; break;
+			}
+		}
 	}
 	
-	protected override void onAnimationDone() {
-		var finalRotation = (playBack ? fromQuart : toQuart);
-        
-        switch (space) {
-            case Space.Self: transform.localRotation = finalRotation; break;
-            case Space.World: transform.rotation = finalRotation; break;
-        }
+	protected override void prepareAnimation() {
+		from = (!playBack && beginFromCurrent ? currentRotation : Quaternion.Euler(fromRotation));
+		to = (playBack && beginFromCurrent ? currentRotation : Quaternion.Euler(toRotation));
 	}
 	
-	protected override void onAnimationProgress(float progress) {
-		#if UNITY_EDITOR
-		onAnimationBegin();
-		#endif
-		
-        var newRotation = Quaternion.LerpUnclamped(fromQuart, toQuart, progress);
-		
-        switch (space) {
-            case Space.Self: transform.localRotation = newRotation; break;
-            case Space.World: transform.rotation = newRotation; break;
-        }
+	protected override void updateAnimation(float progress, AnimationBehaviour.State state) {
+        currentRotation = Quaternion.LerpUnclamped(from, to, progress);
 	}
 }

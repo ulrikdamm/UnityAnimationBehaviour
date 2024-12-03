@@ -36,6 +36,7 @@ public class UIAlphaAnimationEditor : AnimationBehaviourEditor {
 public class UIAlphaAnimation : AnimationBehaviour {
 	public float fromAlpha = 0;
 	public float toAlpha = 1;
+	public bool changeCanvasGroupInteractable = true;
 	
 	float from, to;
 	
@@ -46,8 +47,10 @@ public class UIAlphaAnimation : AnimationBehaviour {
 		get => canvasGroup.alpha;
 		set {
 			canvasGroup.alpha = value;
-			canvasGroup.interactable = (canvasGroup.alpha > 0.001f);
-			canvasGroup.blocksRaycasts = canvasGroup.interactable;
+			if (changeCanvasGroupInteractable) {
+				canvasGroup.interactable = (canvasGroup.alpha > 0.001f);
+				canvasGroup.blocksRaycasts = canvasGroup.interactable;
+			}
 		}
 	}
 	
